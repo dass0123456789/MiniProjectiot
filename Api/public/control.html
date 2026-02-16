@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Smart Bathroom Control</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      margin-top: 50px;
+    }
+
+    button {
+      width: 150px;
+      height: 60px;
+      font-size: 18px;
+      margin: 10px;
+    }
+
+    .on {
+      background-color: green;
+      color: white;
+    }
+
+    .off {
+      background-color: red;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Smart Bathroom Control Panel</h2>
+
+<button id="fanBtn">Fan</button>
+<button id="lightBtn">Light</button>
+
+<script>
+
+let state = {
+  fan:false,
+  light:false
+}
+
+async function loadState(){
+  const res = await fetch("/api/device")
+  state = await res.json()
+  updateUI()
+}
+
+function updateUI(){
+  const fanBtn = document.getElementById("fanBtn")
+  const lightBtn = document.getElementById("lightBtn")
+
+  fanBtn.className = state.fan ? "on" : "off"
+  fanBtn.innerText = state.fan ? "Fan ON" : "Fan OFF"
+
+  lightBtn.className = state.light ? "on" : "off"
+  lightBtn.innerText = state.light ? "Light ON" : "Light OFF"
+}
+
+async function updateDevice(){
+  await fetch("/api/control",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify(state)
+  })
+}
+
+document.getElementById("fanBtn").onclick = async ()=>{
+  state.fan = !state.fan
+  updateUI()
+  await updateDevice()
+}
+
+document.getElementById("lightBtn").onclick = async ()=>{
+  state.light = !state.light
+  updateUI()
+  await updateDevice()
+}
+
+loadState()
+
+</script>
+
+</body>
+</html>

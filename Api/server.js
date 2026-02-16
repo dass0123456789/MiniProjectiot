@@ -4,6 +4,8 @@ const mysql = require("mysql2")
 
 const app = express()
 app.use(express.json())
+app.use(express.static("public"))
+
 
 // ===== MySQL Connection =====
 const db = mysql.createConnection({
@@ -22,10 +24,7 @@ db.connect((err)=>{
 })
 
 // ===== Device State =====
-let deviceState = {
-  fan:false,
-  light:false
-}
+
 
 // ===== Telegram =====
 const bot = new TelegramBot("YOUR_TOKEN")
@@ -51,11 +50,7 @@ app.post("/api/sensor",(req,res)=>{
     }
   })
 
-  // ตรวจ Threshold
   if(temp > 35 || humidity > 80){
-
-    deviceState.fan = true
-
     bot.sendMessage(chatId,"⚠ Bathroom humidity or temp high")
   }
 
@@ -64,14 +59,34 @@ app.post("/api/sensor",(req,res)=>{
 
 // ===== ESP32 ดึงสถานะ =====
 app.get("/api/device",(req,res)=>{
-  res.json(deviceState)
+
+  const sql = `SELECT fan, light FROM device_state WHERE id = 1`
+
+  db.query(sql,(err,result)=>{
+    if(err) return res.status(500).json(err)
+
+    res.json(result[0])
+  })
 })
 
 // ===== Web ควบคุม =====
 app.post("/api/control",(req,res)=>{
-  deviceState = req.body
-  res.sendStatus(200)
+
+  const {fan, light} = req.body
+
+  const sql = `
+    UPDATE device_state 
+    SET fan = ?, light = ?
+    WHERE id = 1
+  `
+
+  db.query(sql,[fan,light],(err)=>{
+    if(err) return res.status(500).json(err)
+
+    res.json({message:"Device updated"})
+  })
 })
+
 
 // ===== ดึงข้อมูล History สำหรับ Graph =====
 app.get("/api/history",(req,res)=>{
@@ -90,6 +105,39 @@ app.get("/api/history",(req,res)=>{
     res.json(results)
   })
 })
+app.get("/api/summary",(req,res)=>{
+
+  const historySql = `
+    SELECT 
+      temperature,
+      humidity,
+      distance,
+      created_at
+    FROM sensor_data
+    ORDER BY created_at ASC
+    LIMIT 100
+  `
+
+  const usageSql = `
+    SELECT COUNT(*) AS usage_count 
+    FROM sensor_data
+    WHERE distance > 0 AND distance < 100
+  `
+
+  db.query(historySql,(err,historyResults)=>{
+    if(err) return res.status(500).json(err)
+
+    db.query(usageSql,(err,usageResult)=>{
+      if(err) return res.status(500).json(err)
+
+      res.json({
+        history: historyResults,
+        usage: usageResult[0].usage_count
+      })
+    })
+  })
+})
+
 
 // ===== Start Server =====
 app.listen(3000,()=>{
