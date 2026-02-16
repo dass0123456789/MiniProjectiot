@@ -52,6 +52,8 @@
 <button id="fanBtn">Fan</button>
 <button id="lightBtn">Light 1</button>
 <button id="light2Btn">Light 2</button>
+<br><br>
+<button onclick="goToStats()">View Statistics</button>
 
 <br>
 <button id="modeBtn" class="modeBtn">Mode</button>
@@ -64,7 +66,9 @@ let state = {
   light2:false,
   mode:"AUTO"
 }
-
+function goToStats(){
+  window.location.href = "/stats.html"
+}
 async function loadState(){
   const res = await fetch("/api/device")
   const data = await res.json()

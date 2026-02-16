@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bathroom Statistics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    html, body{
+      height:100%;
+      margin:0;
+      font-family: Arial;
+      display:flex;
+      flex-direction:column;
+    }
+
+    h2{
+      text-align:center;
+      margin:20px 0;
+    }
+
+    .chart-container{
+      flex:1;              /* กินพื้นที่เต็มหน้าจอ */
+      position:relative;
+      width:100%;
+    }
+
+    canvas{
+      width:100% !important;
+      height:100% !important;
+    }
+
+    .btn-container{
+      text-align:center;
+      padding:15px;
+    }
+
+    button{
+      padding:10px 20px;
+      font-size:16px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Bathroom Usage & Environment Graph</h2>
+
+<div class="chart-container">
+  <canvas id="myChart"></canvas>
+</div>
+
+<div class="btn-container">
+  <button onclick="window.location.href='/control.html'">
+    Back to Control
+  </button>
+</div>
+
+<script>
+
+async function loadData(){
+  const res = await fetch("/api/stats")
+  const data = await res.json()
+
+  const ctx = document.getElementById("myChart")
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [
+        {
+          label: 'Temperature (°C)',
+          data: data.temperature,
+          borderWidth: 2
+        },
+        {
+          label: 'Humidity (%)',
+          data: data.humidity,
+          borderWidth: 2
+        },
+        {
+          label: 'Usage Count',
+          data: data.usage,
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,   // 🔥 สำคัญมาก
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  })
+}
+
+loadData()
+
+</script>
+
+</body>
+</html>
