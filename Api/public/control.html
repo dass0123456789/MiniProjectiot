@@ -10,10 +10,11 @@
     }
 
     button {
-      width: 150px;
+      width: 170px;
       height: 60px;
       font-size: 18px;
       margin: 10px;
+      cursor: pointer;
     }
 
     .on {
@@ -25,6 +26,23 @@
       background-color: red;
       color: white;
     }
+
+    .modeBtn {
+      width: 200px;
+      height: 50px;
+      font-size: 18px;
+      margin-top: 20px;
+    }
+
+    .auto {
+      background-color: orange;
+      color: white;
+    }
+
+    .manual {
+      background-color: blue;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -32,30 +50,64 @@
 <h2>Smart Bathroom Control Panel</h2>
 
 <button id="fanBtn">Fan</button>
-<button id="lightBtn">Light</button>
+<button id="lightBtn">Light 1</button>
+<button id="light2Btn">Light 2</button>
+
+<br>
+<button id="modeBtn" class="modeBtn">Mode</button>
 
 <script>
 
 let state = {
   fan:false,
-  light:false
+  light:false,
+  light2:false,
+  mode:"AUTO"
 }
 
 async function loadState(){
   const res = await fetch("/api/device")
-  state = await res.json()
+  const data = await res.json()
+
+  state.fan = !!data.fan
+  state.light = !!data.light
+  state.light2 = !!data.light2
+  state.mode = data.mode
+
   updateUI()
 }
 
 function updateUI(){
+
   const fanBtn = document.getElementById("fanBtn")
   const lightBtn = document.getElementById("lightBtn")
+  const light2Btn = document.getElementById("light2Btn")
+  const modeBtn = document.getElementById("modeBtn")
 
+  // ===== Device Buttons =====
   fanBtn.className = state.fan ? "on" : "off"
   fanBtn.innerText = state.fan ? "Fan ON" : "Fan OFF"
 
   lightBtn.className = state.light ? "on" : "off"
-  lightBtn.innerText = state.light ? "Light ON" : "Light OFF"
+  lightBtn.innerText = state.light ? "Light 1 ON" : "Light 1 OFF"
+
+  light2Btn.className = state.light2 ? "on" : "off"
+  light2Btn.innerText = state.light2 ? "Light 2 ON" : "Light 2 OFF"
+
+  // ===== Mode Button =====
+  if(state.mode === "AUTO"){
+    modeBtn.className = "modeBtn auto"
+    modeBtn.innerText = "Mode: AUTO"
+  }else{
+    modeBtn.className = "modeBtn manual"
+    modeBtn.innerText = "Mode: MANUAL"
+  }
+
+  // ===== ถ้า AUTO ปิดการกดปุ่ม =====
+  const disabled = (state.mode === "AUTO")
+  fanBtn.disabled = disabled
+  lightBtn.disabled = disabled
+  light2Btn.disabled = disabled
 }
 
 async function updateDevice(){
@@ -80,7 +132,23 @@ document.getElementById("lightBtn").onclick = async ()=>{
   await updateDevice()
 }
 
+document.getElementById("light2Btn").onclick = async ()=>{
+  state.light2 = !state.light2
+  updateUI()
+  await updateDevice()
+}
+
+document.getElementById("modeBtn").onclick = async ()=>{
+  state.mode = (state.mode === "AUTO") ? "MANUAL" : "AUTO"
+  updateUI()
+  await updateDevice()
+}
+
+// โหลดสถานะตอนเปิดหน้า
 loadState()
+
+// รีเฟรชทุก 5 วิ
+setInterval(loadState,5000)
 
 </script>
 
