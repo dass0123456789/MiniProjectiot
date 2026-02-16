@@ -9,7 +9,7 @@ app.use(express.static("public"))
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "1234",
+  password: "pasin254669",
   database: "smart_bathroom"
 })
 
@@ -18,8 +18,8 @@ db.connect(err => {
   else console.log("MySQL Connected")
 })
 
-const bot = new TelegramBot("YOUR_TOKEN")
-const chatId = "YOUR_CHAT_ID"
+const bot = new TelegramBot("8124668605:AAFXEzJMcWZ2WiNf9tqe_5jPrAbsiMW0jnY")
+const chatId = "8535580147"
 
 
 // ================= SENSOR =================
