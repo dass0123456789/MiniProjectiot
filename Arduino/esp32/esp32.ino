@@ -18,11 +18,11 @@
 #define LED_WIFI 2
 #define LED_ALERT 15
 
-const char* server = "http://YOUR_BACKEND_IP:3000";
+const char* server = "http://192.168.1.187:3000";
 
 // ===== Telegram =====
-const char* BOT_TOKEN = "YOUR_BOT_TOKEN";
-const char* CHAT_ID   = "YOUR_CHAT_ID";
+const char* BOT_TOKEN = "8124668605:AAFXEzJMcWZ2WiNf9tqe_5jPrAbsiMW0jnY";
+const char* CHAT_ID = "8535580147";
 
 WiFiClientSecure secured_client;
 UniversalTelegramBot bot(BOT_TOKEN, secured_client);
@@ -31,7 +31,7 @@ DHT dht(DHTPIN, DHTTYPE);
 
 unsigned long lastReconnectAttempt = 0;
 bool serverConnected = true;
-bool alertSent = false;   // ป้องกันส่งซ้ำ
+bool alertSent = false;  // ป้องกันส่งซ้ำ
 
 // ===== Ultrasonic =====
 float getDistance() {
@@ -48,7 +48,7 @@ float getDistance() {
 }
 
 // ===== ส่ง Telegram =====
-void sendTelegramAlert(float t, float h){
+void sendTelegramAlert(float t, float h) {
 
   String message = "🚨 Smart Bathroom Alert\n";
   message += "Temperature: " + String(t) + " °C\n";
@@ -58,24 +58,24 @@ void sendTelegramAlert(float t, float h){
 }
 
 // ===== LOCAL CONTROL =====
-void localControl(float t, float h, float d){
+void localControl(float t, float h, float d) {
 
   // เปิดไฟเมื่อมีคน
-  if(d > 0 && d < 100){
+  if (d > 0 && d < 100) {
     digitalWrite(LIGHT, HIGH);
   } else {
     digitalWrite(LIGHT, LOW);
   }
 
   // ตรวจอุณหภูมิ/ความชื้น
-  if(t > 35 || h > 80){
+  if (t > 35 || h > 80) {
 
     digitalWrite(FAN, HIGH);
     digitalWrite(LED_ALERT, HIGH);
 
     // ส่ง Telegram แค่ครั้งเดียว
-    if(!alertSent && WiFi.status() == WL_CONNECTED){
-      sendTelegramAlert(t,h);
+    if (!alertSent && WiFi.status() == WL_CONNECTED) {
+      sendTelegramAlert(t, h);
       alertSent = true;
     }
 
@@ -84,19 +84,19 @@ void localControl(float t, float h, float d){
     digitalWrite(FAN, LOW);
     digitalWrite(LED_ALERT, LOW);
 
-    alertSent = false; // reset เมื่อค่าปกติ
+    alertSent = false;  // reset เมื่อค่าปกติ
   }
 }
 
 // ===== ส่งข้อมูลไป Server =====
-void sendSensor(float t, float h, float d){
+void sendSensor(float t, float h, float d) {
 
-  if(WiFi.status() != WL_CONNECTED) return;
+  if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
   http.setTimeout(3000);
-  http.begin(String(server)+"/api/sensor");
-  http.addHeader("Content-Type","application/json");
+  http.begin(String(server) + "/api/sensor");
+  http.addHeader("Content-Type", "application/json");
 
   StaticJsonDocument<200> doc;
   doc["temp"] = t;
@@ -108,7 +108,7 @@ void sendSensor(float t, float h, float d){
 
   int httpCode = http.POST(body);
 
-  if(httpCode <= 0){
+  if (httpCode <= 0) {
     Serial.println("Server not reachable");
     serverConnected = false;
   } else {
@@ -119,24 +119,24 @@ void sendSensor(float t, float h, float d){
 }
 
 // ===== ดึงคำสั่งจาก Server =====
-void getCommand(){
+void getCommand() {
 
-  if(WiFi.status() != WL_CONNECTED) return;
+  if (WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
   http.setTimeout(3000);
-  http.begin(String(server)+"/api/device");
+  http.begin(String(server) + "/api/device");
 
   int code = http.GET();
 
-  if(code == 200){
+  if (code == 200) {
 
     String payload = http.getString();
 
     StaticJsonDocument<200> doc;
-    DeserializationError error = deserializeJson(doc,payload);
+    DeserializationError error = deserializeJson(doc, payload);
 
-    if(!error){
+    if (!error) {
       bool fan = doc["fan"];
       bool light = doc["light"];
 
@@ -154,11 +154,11 @@ void getCommand(){
 }
 
 // ===== WiFi reconnect =====
-void checkWiFi(){
+void checkWiFi() {
 
-  if(WiFi.status() != WL_CONNECTED){
+  if (WiFi.status() != WL_CONNECTED) {
 
-    if(millis() - lastReconnectAttempt > 10000){
+    if (millis() - lastReconnectAttempt > 10000) {
       Serial.println("Reconnecting WiFi...");
       WiFi.reconnect();
       lastReconnectAttempt = millis();
@@ -183,19 +183,19 @@ void setup() {
   wm.autoConnect("BathroomSetup");
 
   // WiFi Blink
-  for(int i=0;i<5;i++){
-    digitalWrite(LED_WIFI,HIGH);
+  for (int i = 0; i < 5; i++) {
+    digitalWrite(LED_WIFI, HIGH);
     delay(300);
-    digitalWrite(LED_WIFI,LOW);
+    digitalWrite(LED_WIFI, LOW);
     delay(300);
   }
 
-  secured_client.setInsecure(); // สำหรับ Telegram HTTPS
+  secured_client.setInsecure();  // สำหรับ Telegram HTTPS
 
   dht.begin();
 }
 
-void loop(){
+void loop() {
 
   checkWiFi();
 
@@ -203,13 +203,18 @@ void loop(){
   float h = dht.readHumidity();
   float d = getDistance();
 
+  if (isnan(t) || isnan(h)) {
+    Serial.println("DHT read fail");
+    delay(2000);
+    return;
+  }
   // ทำงาน local เสมอ
-  localControl(t,h,d);
+  localControl(t, h, d);
 
   // Sync กับ Server ถ้าเชื่อมต่อได้
-  sendSensor(t,h,d);
+  sendSensor(t, h, d);
 
-  if(serverConnected){
+  if (serverConnected) {
     getCommand();
   }
 
