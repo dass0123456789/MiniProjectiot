@@ -3,6 +3,8 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <DHT.h>
+#include <WiFiClientSecure.h>
+#include <UniversalTelegramBot.h>
 
 #define DHTPIN 4
 #define DHTTYPE DHT22
@@ -18,11 +20,20 @@
 
 const char* server = "http://YOUR_BACKEND_IP:3000";
 
+// ===== Telegram =====
+const char* BOT_TOKEN = "YOUR_BOT_TOKEN";
+const char* CHAT_ID   = "YOUR_CHAT_ID";
+
+WiFiClientSecure secured_client;
+UniversalTelegramBot bot(BOT_TOKEN, secured_client);
+
 DHT dht(DHTPIN, DHTTYPE);
 
 unsigned long lastReconnectAttempt = 0;
 bool serverConnected = true;
+bool alertSent = false;   // ป้องกันส่งซ้ำ
 
+// ===== Ultrasonic =====
 float getDistance() {
 
   digitalWrite(TRIG, LOW);
@@ -32,11 +43,21 @@ float getDistance() {
   delayMicroseconds(10);
   digitalWrite(TRIG, LOW);
 
-  long duration = pulseIn(ECHO, HIGH, 30000); // timeout 30ms
+  long duration = pulseIn(ECHO, HIGH, 30000);
   return duration * 0.034 / 2;
 }
 
-// ===== LOCAL CONTROL (ทำงานแม้ server ล่ม) =====
+// ===== ส่ง Telegram =====
+void sendTelegramAlert(float t, float h){
+
+  String message = "🚨 Smart Bathroom Alert\n";
+  message += "Temperature: " + String(t) + " °C\n";
+  message += "Humidity: " + String(h) + " %";
+
+  bot.sendMessage(CHAT_ID, message, "");
+}
+
+// ===== LOCAL CONTROL =====
 void localControl(float t, float h, float d){
 
   // เปิดไฟเมื่อมีคน
@@ -46,13 +67,24 @@ void localControl(float t, float h, float d){
     digitalWrite(LIGHT, LOW);
   }
 
-  // เปิดพัดลมเมื่อ temp/humidity สูง
+  // ตรวจอุณหภูมิ/ความชื้น
   if(t > 35 || h > 80){
+
     digitalWrite(FAN, HIGH);
     digitalWrite(LED_ALERT, HIGH);
+
+    // ส่ง Telegram แค่ครั้งเดียว
+    if(!alertSent && WiFi.status() == WL_CONNECTED){
+      sendTelegramAlert(t,h);
+      alertSent = true;
+    }
+
   } else {
+
     digitalWrite(FAN, LOW);
     digitalWrite(LED_ALERT, LOW);
+
+    alertSent = false; // reset เมื่อค่าปกติ
   }
 }
 
@@ -62,7 +94,7 @@ void sendSensor(float t, float h, float d){
   if(WiFi.status() != WL_CONNECTED) return;
 
   HTTPClient http;
-  http.setTimeout(3000); // timeout 3 วิ
+  http.setTimeout(3000);
   http.begin(String(server)+"/api/sensor");
   http.addHeader("Content-Type","application/json");
 
@@ -158,6 +190,8 @@ void setup() {
     delay(300);
   }
 
+  secured_client.setInsecure(); // สำหรับ Telegram HTTPS
+
   dht.begin();
 }
 
@@ -169,10 +203,10 @@ void loop(){
   float h = dht.readHumidity();
   float d = getDistance();
 
-  // ทำงาน local ก่อนเสมอ
+  // ทำงาน local เสมอ
   localControl(t,h,d);
 
-  // ถ้า server ยังต่อได้ → sync ข้อมูล
+  // Sync กับ Server ถ้าเชื่อมต่อได้
   sendSensor(t,h,d);
 
   if(serverConnected){
