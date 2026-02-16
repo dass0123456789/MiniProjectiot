@@ -6,7 +6,6 @@ const app = express()
 app.use(express.json())
 app.use(express.static("public"))
 
-// ===== MySQL Connection =====
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -14,100 +13,97 @@ const db = mysql.createConnection({
   database: "smart_bathroom"
 })
 
-db.connect((err)=>{
-  if(err){
-    console.log("DB Error:",err)
-  }else{
-    console.log("MySQL Connected")
-  }
+db.connect(err=>{
+  if(err) console.log(err)
+  else console.log("MySQL Connected")
 })
 
-// ===== Telegram =====
 const bot = new TelegramBot("YOUR_TOKEN")
 const chatId = "YOUR_CHAT_ID"
 
-// ===== API รับข้อมูล Sensor =====
+
+// ================= SENSOR =================
 app.post("/api/sensor",(req,res)=>{
 
   const {temp,humidity,distance} = req.body
 
-  console.log(req.body)
-
-  // บันทึกข้อมูล sensor
   const insertSql = `
     INSERT INTO sensor_data 
     (temperature, humidity, distance)
     VALUES (?, ?, ?)
   `
+  db.query(insertSql,[temp,humidity,distance])
 
-  db.query(insertSql,[temp,humidity,distance],(err)=>{
-    if(err) console.log("Insert Error:",err)
-  })
-
-  // ===== ดึงสถานะปัจจุบัน =====
+  // ===== อ่านสถานะปัจจุบัน =====
   db.query("SELECT * FROM device_state WHERE id = 1",(err,result)=>{
     if(err) return console.log(err)
 
-    let {fan, light, light2} = result[0]
+    let {fan, light, light2, mode} = result[0]
 
-    // 🚻 ถ้ามีคนเข้า (distance < 100)
-    if(distance > 0 && distance < 100){
-      light = 1
+    // 🔥 ทำงาน AUTO เท่านั้น
+    if(mode === "AUTO"){
+
+      // เปิดไฟเมื่อมีคน
+      if(distance > 0 && distance < 100){
+        light = 1
+      } else {
+        light = 0
+      }
+
+      // เปิดพัดลม + LED2 เมื่อ temp/humidity สูง
+      if(temp > 35 || humidity > 80){
+        fan = 1
+        light2 = 1
+        bot.sendMessage(chatId,"⚠ High Temp/Humidity → Fan + LED2 ON")
+      } else {
+        fan = 0
+        light2 = 0
+      }
+
+      const updateSql = `
+        UPDATE device_state
+        SET fan=?, light=?, light2=?
+        WHERE id=1
+      `
+      db.query(updateSql,[fan,light,light2])
     }
 
-    // 🌡 ถ้าอุณหภูมิหรือความชื้นสูง
-    if(temp > 35 || humidity > 80){
-      fan = 1
-      light2 = 1
-      bot.sendMessage(chatId,"⚠ High Temp/Humidity → Fan + LED2 ON")
-    }
-
-    // ===== Update สถานะลง DB =====
-    const updateSql = `
-      UPDATE device_state
-      SET fan = ?, light = ?, light2 = ?
-      WHERE id = 1
-    `
-
-    db.query(updateSql,[fan,light,light2],(err)=>{
-      if(err) console.log("Update Error:",err)
-    })
   })
 
   res.sendStatus(200)
 })
 
-// ===== ESP32 ดึงสถานะ =====
+
+// ================= GET DEVICE =================
 app.get("/api/device",(req,res)=>{
 
-  const sql = `SELECT fan, light, light2 FROM device_state WHERE id = 1`
-
-  db.query(sql,(err,result)=>{
+  db.query("SELECT fan, light, light2, mode FROM device_state WHERE id=1",
+  (err,result)=>{
     if(err) return res.status(500).json(err)
-
     res.json(result[0])
   })
 })
 
-// ===== Web ควบคุม =====
+
+// ================= WEB CONTROL =================
 app.post("/api/control",(req,res)=>{
 
-  const {fan, light, light2} = req.body
+  const {fan, light, light2, mode} = req.body
 
   const sql = `
     UPDATE device_state 
-    SET fan = ?, light = ?, light2 = ?
-    WHERE id = 1
+    SET fan=?, light=?, light2=?, mode=?
+    WHERE id=1
   `
 
-  db.query(sql,[fan,light,light2],(err)=>{
+  db.query(sql,[fan,light,light2,mode],(err)=>{
     if(err) return res.status(500).json(err)
-
     res.json({message:"Device updated"})
   })
 })
 
-// ===== Start Server =====
+
+// ================= START =================
 app.listen(3000,()=>{
   console.log("Server running on port 3000")
 })

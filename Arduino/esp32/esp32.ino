@@ -3,8 +3,6 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <DHT.h>
-#include <WiFiClientSecure.h>
-#include <UniversalTelegramBot.h>
 
 #define DHTPIN 4
 #define DHTTYPE DHT22
@@ -14,19 +12,12 @@
 
 #define FAN 27
 #define LIGHT 26
-#define LIGHT2 25      // ✅ เพิ่ม LED ดวงที่ 2
+#define LIGHT2 25
 
 #define LED_WIFI 2
 #define LED_ALERT 15
 
 const char* server = "http://192.168.1.187:3000";
-
-// ===== Telegram =====
-const char* BOT_TOKEN = "YOUR_TOKEN";
-const char* CHAT_ID = "YOUR_CHAT_ID";
-
-WiFiClientSecure secured_client;
-UniversalTelegramBot bot(BOT_TOKEN, secured_client);
 
 DHT dht(DHTPIN, DHTTYPE);
 
@@ -47,17 +38,15 @@ float getDistance() {
   return duration * 0.034 / 2;
 }
 
-// ===== LOCAL CONTROL (ทำงานเมื่อ Server หลุด) =====
+// ===== LOCAL FALLBACK (ใช้เมื่อ server ล่ม) =====
 void localControl(float t, float h, float d) {
 
-  // เปิดไฟเมื่อมีคน
   if (d > 0 && d < 100) {
     digitalWrite(LIGHT, HIGH);
   } else {
     digitalWrite(LIGHT, LOW);
   }
 
-  // ควบคุมพัดลมและไฟดวงที่ 2
   if (t > 35 || h > 80) {
     digitalWrite(FAN, HIGH);
     digitalWrite(LIGHT2, HIGH);
@@ -69,7 +58,7 @@ void localControl(float t, float h, float d) {
   }
 }
 
-// ===== ส่งข้อมูลไป Server =====
+// ===== ส่ง Sensor ไป Server =====
 void sendSensor(float t, float h, float d) {
 
   if (WiFi.status() != WL_CONNECTED) return;
@@ -89,7 +78,6 @@ void sendSensor(float t, float h, float d) {
   int httpCode = http.POST(body);
 
   if (httpCode <= 0) {
-    Serial.println("Server not reachable");
     serverConnected = false;
   } else {
     serverConnected = true;
@@ -112,18 +100,32 @@ void getCommand() {
 
     String payload = http.getString();
 
-    StaticJsonDocument<200> doc;
+    StaticJsonDocument<256> doc;
     DeserializationError error = deserializeJson(doc, payload);
 
     if (!error) {
 
       bool fan = doc["fan"];
       bool light = doc["light"];
-      bool light2 = doc["light2"];   // ✅ อ่านเพิ่ม
+      bool light2 = doc["light2"];
+      String mode = doc["mode"];   // ✅ อ่าน mode
 
-      digitalWrite(FAN, fan);
-      digitalWrite(LIGHT, light);
-      digitalWrite(LIGHT2, light2);  // ✅ ควบคุมเพิ่ม
+      // ===== ถ้าเป็น MANUAL ให้ทำตามเว็บ =====
+      if (mode == "MANUAL") {
+
+        digitalWrite(FAN, fan);
+        digitalWrite(LIGHT, light);
+        digitalWrite(LIGHT2, light2);
+
+      }
+      // ===== ถ้าเป็น AUTO ก็ทำตาม server ที่คำนวณไว้แล้ว =====
+      else if (mode == "AUTO") {
+
+        digitalWrite(FAN, fan);
+        digitalWrite(LIGHT, light);
+        digitalWrite(LIGHT2, light2);
+
+      }
 
       serverConnected = true;
     }
@@ -141,7 +143,6 @@ void checkWiFi() {
   if (WiFi.status() != WL_CONNECTED) {
 
     if (millis() - lastReconnectAttempt > 10000) {
-      Serial.println("Reconnecting WiFi...");
       WiFi.reconnect();
       lastReconnectAttempt = millis();
     }
@@ -157,7 +158,7 @@ void setup() {
 
   pinMode(FAN, OUTPUT);
   pinMode(LIGHT, OUTPUT);
-  pinMode(LIGHT2, OUTPUT);   // ✅ เพิ่ม
+  pinMode(LIGHT2, OUTPUT);
 
   pinMode(LED_WIFI, OUTPUT);
   pinMode(LED_ALERT, OUTPUT);
@@ -172,7 +173,6 @@ void setup() {
     delay(300);
   }
 
-  secured_client.setInsecure();
   dht.begin();
 }
 
@@ -185,7 +185,6 @@ void loop() {
   float d = getDistance();
 
   if (isnan(t) || isnan(h)) {
-    Serial.println("DHT read fail");
     delay(2000);
     return;
   }
@@ -193,7 +192,7 @@ void loop() {
   // ส่งข้อมูลขึ้น Server
   sendSensor(t, h, d);
 
-  // ถ้า Server ปกติ → ใช้คำสั่งจาก Server
+  // ถ้า Server ปกติ → ใช้ค่าจาก DB
   if (serverConnected) {
     getCommand();
   } 
