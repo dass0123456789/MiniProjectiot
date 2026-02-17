@@ -91,8 +91,8 @@ This project is an IoT-based Bathroom Monitoring System that:
 ### 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/bathroom-iot.git
-cd bathroom-iot
+git clone https://github.com/dass0123456789/MiniProjectiot.git
+cd MiniProjectiot/Api
 ```
 
 ---
@@ -109,7 +109,7 @@ npm install
 #### Create Database
 
 ```sql
-CREATE DATABASE bathroom_iot;
+CREATE DATABASE smart_bathroom;
 USE bathroom_iot;
 ```
 
@@ -148,8 +148,8 @@ const mysql = require('mysql2');
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: '',
-  database: 'bathroom_iot'
+  password: 'YOUR_DATABASE_PASSWORD',
+  database: 'smart_bathroom'
 });
 ```
 
@@ -209,14 +209,14 @@ Displays:
 **Endpoint**
 
 ```
-POST /api/data
+POST /api/sensor
 ```
 
 **Request Body (JSON)**
 
 | Field | Type | Description |
 |-------|------|-------------|
-| temperature | float | Temperature value |
+| temp | float | Temperature value |
 | humidity | float | Humidity value |
 | distance | float | Distance sensor value |
 
@@ -224,7 +224,7 @@ POST /api/data
 
 ```json
 {
-  "temperature": 28.5,
+  "temp": 28.5,
   "humidity": 65.2,
   "distance": 15.0
 }
@@ -268,9 +268,9 @@ WHERE d2.created_at <= d1.created_at
 ## 🧪 Testing API with cURL
 
 ```bash
-curl -X POST http://localhost:3000/api/data \
+curl -X POST http://localhost:3000/api/sensor \
 -H "Content-Type: application/json" \
--d "{\"temperature\":30,\"humidity\":60,\"distance\":10}"
+-d "{\"temp\":30,\"humidity\":60,\"distance\":10}"
 ```
 
 ---
@@ -278,14 +278,19 @@ curl -X POST http://localhost:3000/api/data \
 ## 📁 Project Structure
 
 ```text
-bathroom-iot/
+MiniProjectiot
 │
-├── server.js
-├── package.json
-├── public/
-│   ├── control.html
-│   └── stats.html
+├── Api/
+│   ├── public/
+│   │   ├── control.html
+│   │   └── stats.html
+│   ├── server.js
+│   └── package.json
+│
+├── Arduino/esp32/esp32.ino
 ├── screenshots/
+│   ├── control.png
+│   └── stats.png
 └── README.md
 ```
 
