@@ -75,8 +75,6 @@ This project is an IoT-based Bathroom Monitoring System that:
 <img src="screenshots/stats.png" width="800">
 ```
 
-> Create a folder named `screenshots/` and add your images.
-
 ---
 
 ## 🛠 Tech Stack
