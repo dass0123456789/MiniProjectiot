@@ -102,13 +102,6 @@ cd bathroom-iot
 ```bash
 npm install
 ```
-
-If needed manually:
-
-```bash
-npm install express mysql2 cors
-```
-
 ---
 
 ### 3️⃣ Database Setup
