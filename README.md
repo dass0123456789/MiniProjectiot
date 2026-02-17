@@ -130,6 +130,17 @@ CREATE TABLE sensor_data (
   distance FLOAT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+CREATE TABLE device_control (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  fan TINYINT(1) DEFAULT 0,
+  light TINYINT(1) DEFAULT 0,
+  light2 TINYINT(1) DEFAULT 0,
+  mode VARCHAR(20) DEFAULT 'AUTO',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+             ON UPDATE CURRENT_TIMESTAMP
+);
+INSERT INTO device_control (fan, light, light2, mode)
+VALUES (0, 0, 0, 'AUTO');
 ```
 
 ---
