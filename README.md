@@ -66,14 +66,10 @@ This project is an IoT-based Bathroom Monitoring System that:
 ## 📸 Screenshots
 
 ### 🟢 Control Page
-```html
-<img src="screenshots/control.png" width="800">
-```
+![Control Page](screenshots/control.png)
 
 ### 📊 Statistics Graph
-```html
-<img src="screenshots/stats.png" width="800">
-```
+![Statistics Graph](screenshots/stats.png)
 
 ---
 
