@@ -110,7 +110,7 @@ npm install
 
 ```sql
 CREATE DATABASE smart_bathroom;
-USE bathroom_iot;
+USE smart_bathroom;
 ```
 
 #### Create Table
