@@ -1,15 +1,43 @@
 const express = require("express")
 const TelegramBot = require("node-telegram-bot-api")
 const mysql = require("mysql2")
+const rateLimit = require("express-rate-limit")
 
 const app = express()
 app.use(express.json())
 app.use(express.static("public"))
 
+// ================= RATE LIMIT =================
+
+// ทั่วไป (ทุก API)
+const globalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 นาที
+  max: 100, // ได้สูงสุด 100 request / นาที
+  message: { error: "Too many requests, please try again later." }
+})
+
+// สำหรับ ESP32 ยิงข้อมูล
+const sensorLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 100, // ส่งได้ 30 ครั้งต่อนาที
+  message: { error: "Sensor rate limit exceeded" }
+})
+
+// สำหรับ web control
+const controlLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 50,
+  message: { error: "Control rate limit exceeded" }
+})
+
+app.use(globalLimiter)
+
+// ================= DATABASE =================
+
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "pasin254669",
+  password: "1234",
   database: "smart_bathroom"
 })
 
@@ -18,12 +46,14 @@ db.connect(err => {
   else console.log("MySQL Connected")
 })
 
-const bot = new TelegramBot("8124668605:AAFXEzJMcWZ2WiNf9tqe_5jPrAbsiMW0jnY")
-const chatId = "8535580147"
+// ================= TELEGRAM =================
 
+const bot = new TelegramBot("YOUR_BOT_TOKEN")
+const chatId = "YOUR_CHAT_ID"
 
 // ================= SENSOR =================
-app.post("/api/sensor", (req, res) => {
+
+app.post("/api/sensor", sensorLimiter, (req, res) => {
 
   const { temp, humidity, distance } = req.body
 
@@ -34,23 +64,19 @@ app.post("/api/sensor", (req, res) => {
   `
   db.query(insertSql, [temp, humidity, distance])
 
-  // ===== อ่านสถานะปัจจุบัน =====
   db.query("SELECT * FROM device_state WHERE id = 1", (err, result) => {
     if (err) return console.log(err)
 
     let { fan, light, light2, mode } = result[0]
 
-    // 🔥 ทำงาน AUTO เท่านั้น
     if (mode === "AUTO") {
 
-      // เปิดไฟเมื่อมีคน
       if (distance > 0 && distance < 100) {
         light = 1
       } else {
         light = 0
       }
 
-      // เปิดพัดลม + LED2 เมื่อ temp/humidity สูง
       if (temp > 35 || humidity > 80) {
         fan = 1
         light2 = 1
@@ -73,8 +99,8 @@ app.post("/api/sensor", (req, res) => {
   res.sendStatus(200)
 })
 
-
 // ================= GET DEVICE =================
+
 app.get("/api/device", (req, res) => {
 
   db.query("SELECT fan, light, light2, mode FROM device_state WHERE id=1",
@@ -84,9 +110,9 @@ app.get("/api/device", (req, res) => {
     })
 })
 
-
 // ================= WEB CONTROL =================
-app.post("/api/control", (req, res) => {
+
+app.post("/api/control", controlLimiter, (req, res) => {
 
   const { fan, light, light2, mode } = req.body
 
@@ -101,6 +127,9 @@ app.post("/api/control", (req, res) => {
     res.json({ message: "Device updated" })
   })
 })
+
+// ================= STATS =================
+
 app.get("/api/stats", (req, res) => {
 
   const sql = `
@@ -130,13 +159,10 @@ app.get("/api/stats", (req, res) => {
     })
 
   })
-
 })
 
-
-
-
 // ================= START =================
+
 app.listen(3000, () => {
   console.log("Server running on port 3000")
 })

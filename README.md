@@ -1,51 +1,134 @@
-🚿 Bathroom IoT Monitoring System
+# 🚿 Bathroom IoT Monitoring System
 
-Smart Bathroom Monitoring System using ESP32 + Node.js + MySQL
+Smart Bathroom Monitoring System using ESP32 + Node.js + MySQL  
+Monitor temperature, humidity, and usage statistics in real-time.
 
-⚙️ Tech Stack
+---
 
-Backend: Node.js + Express
+## 📌 Overview
 
-Database: MySQL
+This project is an IoT-based Bathroom Monitoring System that:
 
-Frontend: HTML + Chart.js
+- Collects environmental data from ESP32  
+- Stores data in MySQL database  
+- Displays real-time dashboard via web  
+- Controls fan through web interface  
+- Shows statistical graph with Chart.js  
+- Tracks bathroom usage count  
 
-Device: ESP32
+---
 
-Communication: REST API (HTTP)
+## 🏗️ System Architecture
 
-ER Diagram
-+----------------+
-|  sensor_data  |
-+----------------+
-| id (PK)       |
-| temperature   |
-| humidity      |
-| distance      |
-| created_at    |
-+----------------+
+```text
+          +-------------+
+          |   ESP32     |
+          | Temp/Humid  |
+          | Distance    |
+          +------+------+ 
+                 |
+                 | HTTP POST (REST API)
+                 v
+        +------------------+
+        |  Node.js Server  |
+        |  Express API     |
+        +--------+---------+
+                 |
+                 | SQL
+                 v
+          +-------------+
+          |   MySQL     |
+          | sensor_data |
+          +-------------+
+                 |
+                 | HTTP GET
+                 v
+        +------------------+
+        |  Web Dashboard   |
+        |  Chart.js Graph  |
+        +------------------+
+```
 
-🏗 System Architecture
-ESP32  --->  Node.js API  --->  MySQL
-   |              |
-   |              --->  Web Dashboard (Control + Graph)
-   |
-HTTP POST
+---
 
-Setup Database
-▸ Install MySQL Community Server
+## ✨ Features
 
-https://dev.mysql.com/downloads/mysql/
+- 🌡 Real-time Temperature Monitoring  
+- 💧 Humidity Monitoring  
+- 👣 Automatic Usage Counting  
+- 🌀 Fan Control via Web  
+- 📊 Interactive Graph Dashboard  
+- 🔌 REST API Communication  
+- 🗄 MySQL Data Storage  
 
-▸ (Optional) Install DBeaver
+---
 
-https://dbeaver.io/download/
+## 📸 Screenshots
 
-▸ Create Database
+### 🟢 Control Page
+```html
+<img src="screenshots/control.png" width="800">
+```
+
+### 📊 Statistics Graph
+```html
+<img src="screenshots/stats.png" width="800">
+```
+
+> Create a folder named `screenshots/` and add your images.
+
+---
+
+## 🛠 Tech Stack
+
+| Technology | Purpose |
+|------------|----------|
+| Node.js | Backend runtime |
+| Express.js | REST API |
+| MySQL | Database |
+| mysql2 | Database driver |
+| Chart.js | Graph visualization |
+| ESP32 | Sensor device |
+
+---
+
+## 📦 Installation Guide
+
+### 1️⃣ Clone Repository
+
+```bash
+git clone https://github.com/yourusername/bathroom-iot.git
+cd bathroom-iot
+```
+
+---
+
+### 2️⃣ Install Dependencies
+
+```bash
+npm install
+```
+
+If needed manually:
+
+```bash
+npm install express mysql2 cors
+```
+
+---
+
+### 3️⃣ Database Setup
+
+#### Create Database
+
+```sql
 CREATE DATABASE bathroom_iot;
 USE bathroom_iot;
+```
 
-▸ Create Table
+#### Create Table
+
+```sql
 CREATE TABLE sensor_data (
   id INT AUTO_INCREMENT PRIMARY KEY,
   temperature FLOAT,
@@ -53,100 +136,182 @@ CREATE TABLE sensor_data (
   distance FLOAT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+```
 
-dotenv
+---
 
-สร้างไฟล์ .env ใน root project
+### 4️⃣ Configure Database Connection
 
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_password
-DB_NAME=bathroom_iot
-PORT=3000
+Edit `server.js`:
 
-
-แล้วใน server.js
-
-require('dotenv').config()
+```js
+const mysql = require('mysql2');
 
 const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME
-})
+  host: 'localhost',
+  user: 'root',
+  password: '',
+  database: 'bathroom_iot'
+});
+```
 
-Install Dependencies
-npm install
+---
 
+## ▶️ Running the Server
 
-หรือถ้าไม่มี package.json:
-
-npm install express mysql2 cors dotenv
-
-To Start
-▸ Start Backend
+```bash
 node server.js
+```
 
+or
 
-หรือ
-
+```bash
 npx nodemon server.js
+```
 
-▸ Open Browser
+Server runs at:
+
+```
+http://localhost:3000
+```
+
+---
+
+## 🌐 Web Usage
+
+### 🟢 Control Page
+```
 http://localhost:3000/control.html
+```
 
-API Documentation
+Features:
+
+- Turn Fan ON/OFF  
+- Navigate to Statistics Page  
+
+---
+
+### 📊 Statistics Page
+```
+http://localhost:3000/stats.html
+```
+
+Displays:
+
+- Temperature graph  
+- Humidity graph  
+- Usage count graph  
+
+---
+
+## 🔌 REST API Documentation
+
+### 📥 1. Insert Sensor Data
+
+**Endpoint**
+
+```
 POST /api/data
+```
 
-Insert sensor data from ESP32
+**Request Body (JSON)**
 
-Body
+| Field | Type | Description |
+|-------|------|-------------|
+| temperature | float | Temperature value |
+| humidity | float | Humidity value |
+| distance | float | Distance sensor value |
+
+**Example**
+
+```json
 {
-  "temperature": 29.5,
-  "humidity": 63.2,
+  "temperature": 28.5,
+  "humidity": 65.2,
   "distance": 15.0
 }
+```
 
+---
+
+### 📊 2. Get Statistics Data
+
+**Endpoint**
+
+```
 GET /api/stats
+```
 
-Get statistics for graph
+**Response Format**
 
-Response
+```json
 {
   "labels": [],
   "temperature": [],
   "humidity": [],
   "usage": []
 }
+```
 
-Project Structure
+---
+
+## 👣 Usage Counting Logic
+
+The system calculates cumulative usage count based on the number of rows recorded in the database over time.
+
+```sql
+SELECT COUNT(*) 
+FROM sensor_data d2 
+WHERE d2.created_at <= d1.created_at
+```
+
+---
+
+## 🧪 Testing API with cURL
+
+```bash
+curl -X POST http://localhost:3000/api/data \
+-H "Content-Type: application/json" \
+-d "{\"temperature\":30,\"humidity\":60,\"distance\":10}"
+```
+
+---
+
+## 📁 Project Structure
+
+```text
 bathroom-iot/
 │
 ├── server.js
-├── .env
 ├── package.json
 ├── public/
 │   ├── control.html
 │   └── stats.html
+├── screenshots/
 └── README.md
+```
 
-Usage Counting Logic
+---
 
-จำนวนการเข้าใช้ = จำนวน row ในฐานข้อมูล
+## 🔒 Security Notes
 
-SELECT COUNT(*) 
-FROM sensor_data d2 
-WHERE d2.created_at <= d1.created_at
+- Ensure MySQL is running  
+- Open port 3000 if using external ESP32  
+- Configure correct local IP address for ESP32 HTTP request  
 
-Future Improvements
+---
 
-Add Authentication
+## 📈 Future Improvements
 
-Real-time update using WebSocket
+- Add Authentication (Login System)  
+- Real-time update with WebSocket  
+- Deploy to Cloud (Render / Railway / AWS)  
+- Add Threshold Alerts  
+- Mobile-friendly dashboard  
 
-Deploy to Cloud (Render / Railway)
+---
 
-Add threshold alert system
+## 👨‍💻 Author
 
-Improve UI to full dashboard style
+Mini Project – IoT Smart Bathroom System  
+Developed for academic project submission 🚀
