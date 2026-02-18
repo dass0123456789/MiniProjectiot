@@ -123,7 +123,7 @@ CREATE TABLE sensor_data (
   distance FLOAT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE device_control (
+CREATE TABLE device_state (
   id INT AUTO_INCREMENT PRIMARY KEY,
   fan TINYINT(1) DEFAULT 0,
   light TINYINT(1) DEFAULT 0,
@@ -151,6 +151,28 @@ const db = mysql.createConnection({
   password: 'YOUR_DATABASE_PASSWORD',
   database: 'smart_bathroom'
 });
+```
+---
+
+### 5️⃣ Configure Telegram Bot Connection
+
+Edit `server.js`:
+
+```js
+const TelegramBot = require("node-telegram-bot-api")
+
+const bot = new TelegramBot("YOUR_BOT_TOKEN")
+const chatId = "YOUR_CHAT_ID"
+```
+
+---
+
+### 6️⃣ Configure Arduino (ESP32) IP API Server
+
+Edit `esp32.ino`:
+
+```c
+const char* server = "http://YOUR_BACKEND_IP:3000";
 ```
 
 ---
