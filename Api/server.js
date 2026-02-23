@@ -37,7 +37,7 @@ app.use(globalLimiter)
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
-  password: "1234",
+  password: "YOUR_DATABASE_PASSWORD",
   database: "smart_bathroom"
 })
 
@@ -71,7 +71,7 @@ app.post("/api/sensor", sensorLimiter, (req, res) => {
 
     if (mode === "AUTO") {
 
-      if (distance > 0 && distance < 100) {
+      if (distance > 0 && distance < 10) {
         light = 1
       } else {
         light = 0

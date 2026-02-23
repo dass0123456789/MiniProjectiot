@@ -41,7 +41,7 @@ float getDistance() {
 // ===== LOCAL FALLBACK (ใช้เมื่อ server ล่ม) =====
 void localControl(float t, float h, float d) {
 
-  if (d > 0 && d < 100) {
+  if (d > 0 && d < 10) {
     digitalWrite(LIGHT, HIGH);
   } else {
     digitalWrite(LIGHT, LOW);
