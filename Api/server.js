@@ -134,14 +134,18 @@ app.get("/api/stats", (req, res) => {
 
   const sql = `
     SELECT 
-      DATE_FORMAT(created_at,'%H:%i') as time,
-      temperature,
-      humidity,
-      (SELECT COUNT(*) 
-       FROM sensor_data d2 
-       WHERE d2.created_at <= d1.created_at) as usage_count
-    FROM sensor_data d1
-    ORDER BY created_at ASC
+  DATE_FORMAT(created_at,'%H:%i') AS time,
+  temperature,
+  humidity,
+  (
+    SELECT COUNT(*) 
+    FROM sensor_data d2 
+    WHERE d2.created_at <= d1.created_at
+      AND d2.distance > 0 
+      AND d2.distance < 10
+  ) AS usage_count
+FROM sensor_data d1
+ORDER BY created_at ASC;
   `
 
   db.query(sql, (err, rows) => {
