@@ -1,21 +1,20 @@
 # 🚿 Bathroom IoT Monitoring System
 
-เกมแยกขยะเพื่อการเรียนรู้ พัฒนาโดยใช้ Python และ Pygame
-Educational Drag & Drop Recycling Game built with Pygame
+Smart Bathroom Monitoring System using ESP32 + Node.js + MySQL  
+Monitor temperature, humidity, and usage statistics in real-time.
 
 ---
 
-## 🎮 เกี่ยวกับโปรเจกต์
+## 📌 Overview
 
-คือเกมแนว Drag & Drop ที่ผู้เล่นต้องลากขยะไปใส่ถังให้ถูกประเภทภายในเวลาที่กำหนด
+This project is an IoT-based Bathroom Monitoring System that:
 
-เกมนี้ถูกออกแบบเพื่อ:
-
-ส่งเสริมความรู้เรื่องการแยกขยะ
-
-สร้างความตระหนักด้านสิ่งแวดล้อม
-
-ใช้เป็นสื่อการเรียนการสอนในโรงเรียน 
+- Collects environmental data from ESP32  
+- Stores data in MySQL database  
+- Displays real-time dashboard via web  
+- Controls fan through web interface  
+- Shows statistical graph with Chart.js  
+- Tracks bathroom usage count  
 
 ---
 
